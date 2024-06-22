@@ -1,3 +1,4 @@
+## About this.
 This code is a Bicep template designed to create an Azure Resource Group with specific tags. Below is a detailed description of the code and its components:
 
 ### Description
@@ -71,3 +72,46 @@ resource newRG 'Microsoft.Resources/resourceGroups@2022-09-01' = {
 
 ### Summary
 This Bicep template facilitates the creation of an Azure Resource Group with specified tags that include management and deployment details. The parameters allow for customization of the resource group's name, location, and tag values, while the use of dynamic parameters ensures the inclusion of current deployment information.
+
+## How to deploy with Azure CLI.
+To deploy the Azure Resource Group using this Bicep template, you can use the Azure CLI. Below are the steps to perform the deployment along with the command to execute.
+
+### Steps to Deploy with Azure CLI
+
+1. **Ensure you have the Azure CLI installed**: If not, you can install it from [here](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli).
+
+2. **Login to your Azure account**: Open your terminal and run:
+   ```bash
+   az login
+   ```
+
+3. **Navigate to the directory containing your Bicep template**: Ensure you have the Bicep file (e.g., `rg.bicep`) in your current directory or provide the correct path.
+
+4. **Deploy the Bicep template**: Use the following Azure CLI command to deploy the resource group. Replace `_rgName` with the desired resource group name, for example, `IoccSato01`.
+
+### Azure CLI Deployment Command
+
+```bash
+az deployment sub create --template-file rg.bicep --parameters _rgName=IoccSato01
+```
+
+### Example Command Breakdown
+- `az deployment sub create`: This command initiates a deployment at the subscription scope.
+- `--template-file rg.bicep`: Specifies the Bicep template file to be used for the deployment.
+- `--parameters _rgName=IoccSato01`: Provides the required parameter for the resource group name.
+
+### Full Deployment Command Example
+
+```bash
+az deployment sub create --template-file rg.bicep --parameters _rgName=IoccSato01
+```
+
+### Additional Parameters
+If you need to specify additional parameters (e.g., `_rgLocation`, `_tagDeptName`), you can include them in the command as follows:
+
+```bash
+az deployment sub create --template-file rg.bicep --parameters _rgName=IoccSato01 _rgLocation=westeurope _tagDeptName=finance
+```
+
+### Summary
+By following these steps and using the provided Azure CLI command, you can deploy your Azure Resource Group using the Bicep template with specified parameters. This allows for a streamlined and automated deployment process.
