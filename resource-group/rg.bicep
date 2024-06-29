@@ -14,16 +14,13 @@ param _rgName string
 ////////////////////////////////////////////////////////////
 // Definition common tags for resources that are created by this template.
 @description('The managing department name of the resoruces. this value is put on a tag.')
-param _tagDeptName string = 'iocc'
-
-@description('The managing owner name of thie resources. this value is put on a tag.')
-param _tagOwnerName string = 'iocc_sato'
+param _deptName string = 'default'
 
 @description('Created date of the resources. formatted as "dd/MM/yyyy". This value is put on a tag.')
-param _tagUtcShort string = utcNow('d')
+param _utcShort string = utcNow('d')
 
 @description('The deployment name specified when the resources is deployed. This value is put on a tag.')
-param _tagDeploymentName string = deployment().name
+param _deploymentName string = deployment().name
 
 ////////////////////////////////////////////////////////////
 // Definitions of resources.
@@ -33,9 +30,8 @@ resource newRG 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: _rgName
   location: _rgLocation
   tags: {
-    dept: _tagDeptName
-    owner: _tagOwnerName
-    lastDeployed: _tagUtcShort
-    deploy: _tagDeploymentName
+    dept: _deptName
+    lastDeployed: _utcShort
+    deploy: _deploymentName
   }
 }
