@@ -66,7 +66,7 @@ resource MainVNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
         properties: {
           addressPrefix: _vnetAdminSubnetPrefix
 
-          // Private Subnet : Azure Bastionのデフォルトアウトバウンドアクセスを無効化
+          // Set to private subnet : Disabled to access outbound traffic of Basion.
           defaultOutboundAccess: false
         }
       }
@@ -77,7 +77,7 @@ resource MainVNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
         properties: {
           addressPrefix: _vnetBastionSubnetPrefix
 
-          // Private Subnet : Azure Bastionのデフォルトアウトバウンドアクセスを無効化
+          // Set to private subnet : Disabled to access outbound traffic of Basion.
           defaultOutboundAccess: false
         }
       }
