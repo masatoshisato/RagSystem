@@ -5,33 +5,52 @@ targetScope = 'resourceGroup'
 ////////////////////////////////////////////////////////////
 // Definitions of parameters for the resource.
 
-param _location string = resourceGroup().location
-param _vnetName string = 'MainVNet'
-param _vnetAddressPrefix string = '10.0.0.0/16'
-param _vnetAdminSubnetName string = 'AdminSubnet'
-param _vnetAdminSubnetPrefix string = '10.0.0.0/29'
-param _vnetBastionSubnetName string = 'AzureBastionSubnet'
-param _vnetBastionSubnetPrefix string = '10.0.0.64/26'
+// Common properties.
+param Location string = resourceGroup().location
+param DeptName string = 'default'
+param DeploymentDate string = utcNow('d')
+param DeploymentName string = deployment().name
 
-param _deptName string = 'default'
-param _utcShort string = utcNow('d')
-param _deploymentName string = deployment().name
+// 
+
+param vnetBastionSubnetName string = 'AzureBastionSubnet'
+param vnetBastionSubnetPrefix string = '10.0.0.64/26'
 
 ////////////////////////////////////////////////////////////
 // Resource definitions.
+
+/*
+ * VNet Definitions.
+ */
+
+// The name of the VNet.
+param MainVNetName string = 'MainVNet'
+
+// Address prefix for VNet.
+param MainVNetAddressPrefix string = '10.0.0.0/16'
+
+// VM encryption. (It must be enabled when using Bastion)
+param MainVNetVMProtectionEnabled bool = true
+
+// Traffic enctryption between VMs.
+param MainVNetEncryptionEnabled bool = true
+
+// DDoS protection for network.
+param MainVNetDdosProtectionEnabled bool = false
+
 resource MainVNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
 
 	// Virtual network name.
-  name: _vnetName
+  name: MainVNetName
 
 	// resion.
-  location: _location
+  location: Location
 
 	// tags.
   tags: {
-    dept: _deptName
-    lastDeployed: _utcShort
-    deploy: _deploymentName
+    dept: DeptName
+    lastDeployed: DeploymentDate
+    deploy: DeploymentName
   }
 
   //////////////////// Property definitions for VNet.
@@ -40,13 +59,10 @@ resource MainVNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
 		// Network address prefixes for VNET.
     addressSpace: {
       addressPrefixes: [
-        _vnetAddressPrefix
+        MainVNetAddressPrefix
       ]
     }
     
-    // Enables for VM when using Bastion. (It must be enabled when using Bastion)
-    enableVmProtection: true
-
     // Enables to encrypt the traffic between VMs.
     encryption: {
       enabled: true
@@ -55,16 +71,35 @@ resource MainVNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
     }
 
     // Disables the ddos protection for network.
-    enableDdosProtection: false
+    enableDdosProtection: MainVNetDdosProtectionEnabled
+  }
+}
 
-    //////////////////// Subnet definitions.
-    subnets: [
+/*
+ * AdminSubnet Definitions.
+ */
 
-      // AdminSubnet
-      {
-        name: _vnetAdminSubnetName
-        properties: {
-          addressPrefix: _vnetAdminSubnetPrefix
+// for AdminSubnet.
+param AdminSubnetName string = 'AdminSubnet'
+param AdminSubnetAddressPrefix string = '10.0.0.0/29'
+param AdminSubnetPrivate bool = true
+param AdminSubnetNATGateway bool = false
+param AdminSubnetNSG string = 'NSG'
+param AdminSubnetPrivateEndpointNetworkPolicies string = 'NSG'
+
+resource AdminSubnet 'Microsoft.Network/virutalNetworks/subnets@2023-11-01' = {
+
+  // Subnet name.
+  name: AdminSubnetName
+
+  // parent resource.
+  parent: MainVNet
+
+  // properties.
+  properties: {
+
+    // Address prefix for subnet.
+    addressPrefix: _AdminSubnetAddressPrefix
 
           // Set to private subnet : Disabled to access outbound traffic of Basion.
           defaultOutboundAccess: false
