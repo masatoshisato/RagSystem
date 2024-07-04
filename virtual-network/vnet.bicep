@@ -3,119 +3,138 @@ metadata description = 'Create a Azure Virtual Network by bicep template with so
 targetScope = 'resourceGroup'
 
 ////////////////////////////////////////////////////////////
-// Definitions of parameters for the resource.
+// Definitions of common parameters for the resources.
 
-// Common properties.
+@description('Common Region for the resources that is referenced from the resource group.')
 param Location string = resourceGroup().location
+
+@description('The managing department name of the resoruces. this value is put on a tag.')
 param DeptName string = 'default'
+
+@description('Created date of the resources. formatted as "dd/MM/yyyy". This value is put on a tag.')
 param DeploymentDate string = utcNow('d')
+
+@description('The deployment name specified when the resources is deployed. This value is put on a tag.')
 param DeploymentName string = deployment().name
 
-// 
-
-param vnetBastionSubnetName string = 'AzureBastionSubnet'
-param vnetBastionSubnetPrefix string = '10.0.0.64/26'
-
 ////////////////////////////////////////////////////////////
-// Resource definitions.
+// Definitions of the RagVNet.
 
-/*
- * VNet Definitions.
- */
+@description('The name of the RagVNet.')
+param RagVNetName string
 
-// The name of the VNet.
-param MainVNetName string = 'MainVNet'
+@description('The address prefix for the RagVNet.')
+param RagVNetAddressPrefix string
 
-// Address prefix for VNet.
-param MainVNetAddressPrefix string = '10.0.0.0/16'
+@description('Traffic encryption between VMs enabled.')
+param RagVNetEncryptionEnabled bool
 
-// VM encryption. (It must be enabled when using Bastion)
-param MainVNetVMProtectionEnabled bool = true
+@description('DDoS protection for network enabled.')
+param RagVNetDdosProtectionEnabled bool
 
-// Traffic enctryption between VMs.
-param MainVNetEncryptionEnabled bool = true
+resource RagVNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
 
-// DDoS protection for network.
-param MainVNetDdosProtectionEnabled bool = false
-
-resource MainVNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
-
-	// Virtual network name.
-  name: MainVNetName
-
-	// resion.
+  name: RagVNetName
   location: Location
 
-	// tags.
   tags: {
     dept: DeptName
     lastDeployed: DeploymentDate
     deploy: DeploymentName
   }
 
-  //////////////////// Property definitions for VNet.
   properties: {
+    enableDdosProtection: RagVNetDdosProtectionEnabled
 
 		// Network address prefixes for VNET.
     addressSpace: {
       addressPrefixes: [
-        MainVNetAddressPrefix
+        RagVNetAddressPrefix
       ]
     }
     
     // Enables to encrypt the traffic between VMs.
     encryption: {
-      enabled: true
-      enforcement: 'AllowUnencrypted' // This is Limitation to be set only 'AllowUnencrypted' by Microsoft.
+      enabled: RagVNetEncryptionEnabled
+      // This property is limited to be set only 'AllowUnencrypted' by Microsoft.
       // https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-encryption-overview#limitations
+      enforcement: 'AllowUnencrypted' 
     }
-
-    // Disables the ddos protection for network.
-    enableDdosProtection: MainVNetDdosProtectionEnabled
   }
 }
 
-/*
- * AdminSubnet Definitions.
- */
+//////////////////////////////////////////////////////////// 
+// Definitions of the AdminSubnet for the RAG Application.
 
-// for AdminSubnet.
-param AdminSubnetName string = 'AdminSubnet'
-param AdminSubnetAddressPrefix string = '10.0.0.0/29'
-param AdminSubnetPrivate bool = true
-param AdminSubnetNATGateway bool = false
-param AdminSubnetNSG string = 'NSG'
-param AdminSubnetPrivateEndpointNetworkPolicies string = 'NSG'
+@description('The name of the AdminSubnet.')
+param AdminSubnetName string
 
-resource AdminSubnet 'Microsoft.Network/virutalNetworks/subnets@2023-11-01' = {
+@description('The address prefix for the AdminSubnet.')
+param AdminSubnetAddressPrefix string
 
-  // Subnet name.
+@description('The flag to either enable(true) or disable(false) the private subnet.')
+param AdminSubnetPrivateEnabled bool
+
+@description('The network policies for private endpoint in the subnet.')
+param AdminSubnetPrivateEndpointNetworkPolicies string
+
+resource AdminSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
+
+  parent: RagVNet
   name: AdminSubnetName
 
-  // parent resource.
-  parent: MainVNet
-
-  // properties.
   properties: {
 
-    // Address prefix for subnet.
-    addressPrefix: _AdminSubnetAddressPrefix
+    addressPrefix: AdminSubnetAddressPrefix
 
-          // Set to private subnet : Disabled to access outbound traffic of Basion.
-          defaultOutboundAccess: false
-        }
-      }
+    // Private endpoint network policies. 
+    // 'Disabled' to disable the network policies for the private endpoint.
+    // 'Enabled' to enable the network policies for the private endpoint for both NSG and Route table
+    // 'NetworkSecurityGroupEnabled' to enable the network policies for the private endpoint for only NSG
+    // 'RouteTableEnabled' to enable the network policies for the private endpoint for only Route table
+    privateEndpointNetworkPolicies : AdminSubnetPrivateEndpointNetworkPolicies
 
-      // AzureBastionSubnet
-      {
-        name: _vnetBastionSubnetName
-        properties: {
-          addressPrefix: _vnetBastionSubnetPrefix
+    // Private subnet flag
+    // 'Disabled' to disable to send outbound traffic to the internet.
+    // 'Enabled' to enable to send outbound traffic to the internet.
+    defaultOutboundAccess: AdminSubnetPrivateEnabled
+  }
+}
 
-          // Set to private subnet : Disabled to access outbound traffic of Basion.
-          defaultOutboundAccess: false
-        }
-      }
-    ]
+//////////////////////////////////////////////////////////// 
+// Definitions of the AzureBastionSubnet for the RAG Application.
+
+@description('The name of the AzureBastionSubnet.')
+param BastionSubnetName string
+
+@description('The address prefix for the AzureBastionSubnet.')
+param BastionSubnetAddressPrefix string
+
+@description('The flag to enable the private for the subnet.')
+param BastionSubnetPrivateEnabled bool
+
+@description('Network policies for private endpoint in the subnet.')
+param BastionSubnetPrivateEndpointNetworkPolicies string
+
+resource BastionSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
+
+  parent: RagVNet
+  name: BastionSubnetName
+
+  properties: {
+
+    addressPrefix: BastionSubnetAddressPrefix
+
+    // Private endpoint network policies. 
+    // 'Disabled' to disable the network policies for the private endpoint.
+    // 'Enabled' to enable the network policies for the private endpoint for both NSG and Route table
+    // 'NetworkSecurityGroupEnabled' to enable the network policies for the private endpoint for only NSG
+    // 'RouteTableEnabled' to enable the network policies for the private endpoint for only Route table
+    privateEndpointNetworkPolicies : BastionSubnetPrivateEndpointNetworkPolicies
+
+    // Private subnet flag
+    // 'Disabled' to disable to send outbound traffic to the internet.
+    // 'Enabled' to enable to send outbound traffic to the internet.
+    defaultOutboundAccess: BastionSubnetPrivateEnabled
   }
 }

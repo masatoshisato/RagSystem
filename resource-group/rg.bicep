@@ -3,35 +3,40 @@ metadata description = 'Create a Azure Resource Group by bicep template with som
 targetScope = 'subscription'
 
 ////////////////////////////////////////////////////////////
-// Definitions of parameters for the resources.
+// Definitions of common parameters for the resources.
 
+// Common properties.
 @description('Common Region for the resources that are created by this template.')
-param _rgLocation string = 'japaneast'  
+param Location string = 'japaneast'
 
-@description('Resource group name that you will create.')
-param _rgName string
-
-////////////////////////////////////////////////////////////
-// Definition common tags for resources that are created by this template.
 @description('The managing department name of the resoruces. this value is put on a tag.')
-param _deptName string = 'default'
+param DeptName string = 'default'
 
 @description('Created date of the resources. formatted as "dd/MM/yyyy". This value is put on a tag.')
-param _utcShort string = utcNow('d')
+param DeploymentDate string = utcNow('d')
 
 @description('The deployment name specified when the resources is deployed. This value is put on a tag.')
-param _deploymentName string = deployment().name
+param DeploymentName string = deployment().name
+
+//////////////////////////////////////////////////////////// 
+// Definitions of the parameters for the Resource Group.
+
+@description('Resource group name that you will create.')
+param RgName string
 
 ////////////////////////////////////////////////////////////
-// Definitions of resources.
+// Definitions of the Resource Group.
 
-// Resource Groups.
 resource newRG 'Microsoft.Resources/resourceGroups@2022-09-01' = {
-  name: _rgName
-  location: _rgLocation
+
+  // Main part of the resource.
+  name: RgName
+  location: Location
+
+  // tags.
   tags: {
-    dept: _deptName
-    lastDeployed: _utcShort
-    deploy: _deploymentName
+    dept: DeptName
+    lastDeployed: DeploymentDate
+    deploy: DeploymentName
   }
 }

@@ -1,3 +1,3 @@
 using './rg.bicep'
 
-param _rgName = 'BastionWithSSHFromKV'
+param RgName = 'RagSystem'
