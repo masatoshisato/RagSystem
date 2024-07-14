@@ -18,14 +18,11 @@ param DeploymentDate string = utcNow('d')
 @description('The deployment name specified when the resources is deployed. This value is put on a tag.')
 param DeploymentName string = deployment().name
 
-//////////////////////////////////////////////////////////// 
-// Definitions of the parameters for the Resource Group.
+////////////////////////////////////////////////////////////
+// Definitions of the Resource Group.
 
 @description('Resource group name that you will create.')
 param RgName string
-
-////////////////////////////////////////////////////////////
-// Definitions of the Resource Group.
 
 resource newRG 'Microsoft.Resources/resourceGroups@2022-09-01' = {
 
