@@ -1,0 +1,9 @@
+{
+    "name": "GithubRagSystem",
+    "description": "This is a federation identity information for RagSystem repositiry of Github actions.",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:masatoshisato/RagSystem:ref:refs/heads/main",
+    "audiences": [
+        "api://AzureADTokenExchange"
+    ]
+}
