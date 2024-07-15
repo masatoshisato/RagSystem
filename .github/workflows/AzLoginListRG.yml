@@ -1,21 +1,36 @@
+# Workflow名の定義
 name: Test Azure Login With OpenID Connect with Service Principal.
-on: [push]
 
+# Workflowのトリガー条件設定
+on: [push] # リポジトリに対してpush要求ががあった時にトリガー
+
+# Github Actionsに対する権限設定
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # id_tokenの生成権限
+  contents: read # 特定リポジトリ/branchのコンテンツの読み込み権限
 
+# jobの定義
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+
+  build-and-deploy:  # job名
+    runs-on: ubuntu-latest # このjobの実行環境
+
+    # "build-and-deploy" jobのステップ定義
     steps:
+
+    # ステップ1. Azureへのログイン
     - name: 'Az CLI Login'
-      uses: azure/login@v1
+      uses: azure/login@v1 # 使用するGithubアクション
+
+      # Githubアクションに渡すパラメータ定義
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }} # シークレットの定義を参照
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+    # ステップ2. ログインアカウントの詳細情報の出力（CLIコマンドの実行）
     - name: Show account information.
+
+      # 実行するシェルコマンドの定義
       run: |
         az account show
