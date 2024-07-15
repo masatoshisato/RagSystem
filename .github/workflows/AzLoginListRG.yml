@@ -1,4 +1,4 @@
-name: Test Azure Login With OpenID Connect
+name: Test Azure Login With OpenID Connect with Service Principal.
 on: [push]
 
 permissions:
@@ -16,6 +16,6 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: List Resource Groups
+    - name: Show account information.
       run: |
         az account show
