@@ -1,36 +1,35 @@
-# Workflow名の定義
+# Definitions the name of Workflow.
 name: Test Azure Login With OpenID Connect with Service Principal.
 
-# Workflowのトリガー条件設定
-on: [push] # リポジトリに対してpush要求ががあった時にトリガー
+on: [push] # Got trigger when push request to the repository.
 
-# Github Actionsに対する権限設定
 permissions:
-  id-token: write # id_tokenの生成権限
-  contents: read # 特定リポジトリ/branchのコンテンツの読み込み権限
+  id-token: write # write down id_token when login to Azure.
+  contents: read # read specified branch of the repository.
 
-# jobの定義
 jobs:
 
-  build-and-deploy:  # job名
-    runs-on: ubuntu-latest # このjobの実行環境
+  # job : show azure account information.
+  show-account-infomation:
 
-    # "build-and-deploy" jobのステップ定義
+    # execute this job on ubuntu-latest environment.
+    runs-on: ubuntu-latest
+
     steps:
 
-    # ステップ1. Azureへのログイン
-    - name: 'Az CLI Login'
-      uses: azure/login@v1 # 使用するGithubアクション
+    # step 1. Login to Azure with Service Principal.
+    - name: Login to Azure with Service Principal.
+      uses: azure/login@v1 # Github actions for Azure login.
 
-      # Githubアクションに渡すパラメータ定義
+      # the parameters for the action.
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }} # シークレットの定義を参照
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    # ステップ2. ログインアカウントの詳細情報の出力（CLIコマンドの実行）
+    # step 2. Show account information.
     - name: Show account information.
 
-      # 実行するシェルコマンドの定義
+      # execute the command to show account information.
       run: |
         az account show
