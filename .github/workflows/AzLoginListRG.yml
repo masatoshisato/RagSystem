@@ -1,4 +1,4 @@
-name: Run Azure Login With OpenID Connect
+name: Test Azure Login With OpenID Connect
 on: [push]
 
 permissions:
@@ -19,5 +19,3 @@ jobs:
     - name: List Resource Groups
       run: |
         az account show
-        az group list
-        pwd
