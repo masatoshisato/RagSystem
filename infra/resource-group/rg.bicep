@@ -6,34 +6,30 @@ targetScope = 'subscription'
 // Definitions of common parameters for the resources.
 
 // Common properties.
-@description('Common Region for the resources that are created by this template.')
-param Location string = 'japaneast'
 
-@description('The managing department name of the resoruces. this value is put on a tag.')
-param DeptName string = 'default'
+@minLength(1)
+@maxLength(64)
+@description('System name that can be used as part of naming resource convention')
+param systemName string
+
+@description('Name of the environment that can be used as part of naming resource convention')
+param envName string
+
+@description('Common Region for the resources that are created by this template.')
+param location string
 
 @description('Created date of the resources. formatted as "dd/MM/yyyy". This value is put on a tag.')
-param DeploymentDate string = utcNow('d')
-
-@description('The deployment name specified when the resources is deployed. This value is put on a tag.')
-param DeploymentName string = deployment().name
+param tags object
 
 ////////////////////////////////////////////////////////////
 // Definitions of the Resource Group.
 
-@description('Resource group name that you will create.')
-param RgName string
-
 resource newRG 'Microsoft.Resources/resourceGroups@2022-09-01' = {
 
   // Main part of the resource.
-  name: RgName
-  location: Location
+  name: '${systemName}-${envName}'
+  location: location
 
   // tags.
-  tags: {
-    dept: DeptName
-    lastDeployed: DeploymentDate
-    deploy: DeploymentName
-  }
+  tags: tags
 }
