@@ -1,6 +1,10 @@
 metadata description = 'Create a Azure Virtual Network by bicep template with some tags.'
 
-targetScope = 'resourceGroup'
+// Settings No.2 of the resource group scoped deployment.
+// https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments
+// 
+// To enable with resource group deployment, this is needed to be disabled.
+//targetScope = 'resourceGroup'
 
 ////////////////////////////////////////////////////////////
 // Definitions of the virtual network.

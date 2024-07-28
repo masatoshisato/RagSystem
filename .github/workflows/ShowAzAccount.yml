@@ -10,7 +10,7 @@ permissions:
 jobs:
 
   # job : show azure account information.
-  show-account-infomation:
+  build_azure_resources:
 
     # execute this job on ubuntu-latest environment.
     runs-on: ubuntu-latest

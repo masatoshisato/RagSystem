@@ -3,6 +3,8 @@ using './main.bicep'
 param systemName = readEnvironmentVariable('SYSTEM_NAME')
 param environmentName = readEnvironmentVariable('AZURE_ENV_NAME')
 param location = readEnvironmentVariable('AZURE_LOCATION')
+//param resourceGroupName = '${systemName}-${environmentName}'
+param resourceGroupName = readEnvironmentVariable('AZURE_RESOURCE_GROUP_NAME')
 
 // for the RagVNet
 param ragVNet_name = '${systemName}-vnet-${environmentName}'

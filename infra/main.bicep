@@ -1,4 +1,11 @@
-targetScope = 'subscription'
+// This is the main bicep file for the RagSystem.
+
+// Settings No.1 of the resource group scoped deployment.
+// https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments
+//
+// To enable with resource group deployment, change the targetScope to 'resourceGroup'.
+//targetScope = 'subscription'
+targetScope = 'resourceGroup'
 
 ////////////////////////////////////////////////////////////
 // Definitions of the common parameters for all the resources.
@@ -15,6 +22,9 @@ param location string
 @description('Created date of the resources. formatted as "dd/MM/yyyy". This value is put on a tag.')
 param deploymentDate string = utcNow('d')
 
+@description('The name of the resource group that is created in advance.')
+param resourceGroupName string
+
 ////////////////////////////////////////////////////////////
 // Definitions of common variables for all the resources.
 
@@ -25,12 +35,21 @@ var tags = {
   lastDeployed: deploymentDate
 }
 
-@description('The name of the resource group. This is used for specifying the scope of the module of the resources that is created in the resource group.')
-var rgName = '${systemName}-${environmentName}'
+// Settings No.4-1 of the resource group scoped deployment.
+// https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments
+// 
+// Removed the definition of the resource group in this template. Instead of this, resource group name is defined in environment variables file and specified as a parameter.
+//@description('The name of the resource group. This is used for specifying the scope of the module of the resources that is created in the resource group.')
+//var rgName = '${systemName}-${environmentName}'
+
+// Settings No.4-2 of the resource group scoped deployment.
+// https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments
+// 
+// Disabled the definition of the resource group in the bicep file.
 
 ////////////////////////////////////////////////////////////
 // Definitions of the resource group.
-
+/*
 @description('Create a Azure Resource Group by bicep template with some tags.')
 module ragRg './resource-group/rg.bicep' = {
 
@@ -38,11 +57,12 @@ module ragRg './resource-group/rg.bicep' = {
   name: 'ragRg'
 
   params: {
-    rgName: rgName
+    rgName: resourceGroupName
     location: location
     tags: tags
   }
 }
+*/
 
 ////////////////////////////////////////////////////////////
 // Definitions of the virtual network.
@@ -91,7 +111,8 @@ param bastionSubnet_privateEndpointNetworkPolicies string
 
 
 module RagVNet './network/vnet.bicep' = {
-  scope: resourceGroup(rgName)
+  // scope: resourceGroup(RagRg)
+  scope: resourceGroup(resourceGroupName)
   name: 'RagVNet'
 
   params: {
@@ -116,8 +137,9 @@ module RagVNet './network/vnet.bicep' = {
     bastionSubnet_privateEnabled: bastionSubnet_privateEnabled
     bastionSubnet_privateEndpointNetworkPolicies: bastionSubnet_privateEndpointNetworkPolicies
   }
-
+  /*
   dependsOn: [
     ragRg
   ]
+  */
 }
