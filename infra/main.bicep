@@ -1,11 +1,6 @@
 // This is the main bicep file for the RagSystem.
 
-// Settings No.1 of the resource group scoped deployment.
-// https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments
-//
-// To enable with resource group deployment, change the targetScope to 'resourceGroup'.
-//targetScope = 'subscription'
-targetScope = 'resourceGroup'
+targetScope = 'subscription'
 
 ////////////////////////////////////////////////////////////
 // Definitions of the common parameters for all the resources.
@@ -35,21 +30,8 @@ var tags = {
   lastDeployed: deploymentDate
 }
 
-// Settings No.4-1 of the resource group scoped deployment.
-// https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments
-// 
-// Removed the definition of the resource group in this template. Instead of this, resource group name is defined in environment variables file and specified as a parameter.
-//@description('The name of the resource group. This is used for specifying the scope of the module of the resources that is created in the resource group.')
-//var rgName = '${systemName}-${environmentName}'
-
-// Settings No.4-2 of the resource group scoped deployment.
-// https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments
-// 
-// Disabled the definition of the resource group in the bicep file.
-
 ////////////////////////////////////////////////////////////
 // Definitions of the resource group.
-/*
 @description('Create a Azure Resource Group by bicep template with some tags.')
 module ragRg './resource-group/rg.bicep' = {
 
@@ -62,7 +44,6 @@ module ragRg './resource-group/rg.bicep' = {
     tags: tags
   }
 }
-*/
 
 ////////////////////////////////////////////////////////////
 // Definitions of the virtual network.
@@ -137,9 +118,7 @@ module RagVNet './network/vnet.bicep' = {
     bastionSubnet_privateEnabled: bastionSubnet_privateEnabled
     bastionSubnet_privateEndpointNetworkPolicies: bastionSubnet_privateEndpointNetworkPolicies
   }
-  /*
   dependsOn: [
     ragRg
   ]
-  */
 }
