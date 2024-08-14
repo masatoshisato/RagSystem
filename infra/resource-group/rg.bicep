@@ -7,7 +7,7 @@ targetScope = 'subscription'
 
 // Parameter definitions for the Resource Group.
 @description('System name that can be used as part of naming resource convention')
-param rgName string
+param rg_name string
 
 @description('Common Region for the resources that are created by this template.')
 param location string
@@ -16,9 +16,11 @@ param location string
 param tags object
 
 // Resource definition for the Resource Group.
-resource newRG 'Microsoft.Resources/resourceGroups@2022-09-01' = {
+resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
 
-  name: rgName
+  name: rg_name
   location: location
   tags: tags
 }
+
+output rg object = rg
