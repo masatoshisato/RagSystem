@@ -11,13 +11,13 @@ param location string
 param tags object
 
 ////////////////////////////////////////////////////////////
-// Parameters of the Subnet to associate with the AVD session host VM (NIC).
+// Parameters of the Subnet to associate with the Network Interface Card (NIC).
 param vm_associatedVNetName string
 param vm_associatedSubnetName string
 
 ////////////////////////////////////////////////////////////
-// Subnet definition for the AVD session host VM (NIC).
-resource avdSessionHostVmSubnet 'Microsoft.Network/virtualNetworks/subnets@2021-02-01' existing = {
+// the Subnet for the VM-NIC.
+resource VmSubnet 'Microsoft.Network/virtualNetworks/subnets@2021-02-01' existing = {
   name: '${vm_associatedVNetName}/${vm_associatedSubnetName}'
 }
 
@@ -28,8 +28,8 @@ param nic_ipConfiguration_name string
 param nic_ipConfiguration_privateIPAllocationMethod string
 
 //////////////////////////////////////////////////////////// 
-// NIC definition for the AVD session host VM.
-resource avdSessionHostVmNic 'Microsoft.Network/networkInterfaces@2021-02-01' = {
+// NIC definition for the Netowrk Interface Card that is related to the VM.
+resource VmNic 'Microsoft.Network/networkInterfaces@2021-02-01' = {
   name: nic_name
   location: location
   tags: tags
@@ -40,7 +40,7 @@ resource avdSessionHostVmNic 'Microsoft.Network/networkInterfaces@2021-02-01' = 
         name: nic_ipConfiguration_name
         properties: {
           subnet: {
-            id: avdSessionHostVmSubnet.id
+            id: VmSubnet.id
           }
           privateIPAllocationMethod: nic_ipConfiguration_privateIPAllocationMethod
         }
@@ -48,25 +48,25 @@ resource avdSessionHostVmNic 'Microsoft.Network/networkInterfaces@2021-02-01' = 
     ]
   }
   dependsOn: [
-    avdSessionHostVmSubnet
+    VmSubnet
   ]
 }
 
 ////////////////////////////////////////////////////////////
-// Parameters of the AVD session host VM.
-param vm_name string = 'RagSystem-AdminAvd-Vm-dev'
-param vm_computerName string = 'AdminHost'
+// Parameters of the VM.
+param vm_name string
+param vm_computerName string
 
 // OS profiles.
-param vm_osProfile_adminUsername string = 'satoadmin'
+param vm_osProfile_adminUsername string
 @secure()
-param vm_osProfile_adminPassword string = newGuid()
-param vm_osProfile_provisionVMAgent bool = true
-param vm_osProfile_enableAutomaticUpdates bool = true
-param vm_osProfile_patchMode string = 'AutomaticByPlatform'
+param vm_osProfile_adminPassword string
+param vm_osProfile_provisionVMAgent bool
+param vm_osProfile_enableAutomaticUpdates bool
+param vm_osProfile_patchMode string
 
 // hardware profiles.
-param vm_hardwareProfile_vmSize string = 'Standard_D4as_v5'
+param vm_hardwareProfile_vmSize string
 
 // security profiles.
 param vm_securityProfile_securityType string = 'TrustedLaunch'
@@ -79,10 +79,10 @@ param vm_osDisk_managedDisk_storageAccountType string = 'Premium_LRS'
 param vm_osDisk_diskSizeGB int = 128
 
 // storage profiles - image reference.
-param vm_imageReference_publisher string = 'MicrosoftWindowsServer'
-param vm_imageReference_offer string = 'WindowsServer'
-param vm_imageReference_sku string = '2022-datacenter-azure-edition-hotpatch'
-param vm_imageReference_version string = 'latest'
+param vm_imageReference_publisher string
+param vm_imageReference_offer string
+param vm_imageReference_sku string
+param vm_imageReference_version string
 
 // diagnostics profiles.
 param vm_diagnosticsProfile_bootDiagnostics_enabled bool = true // ブート診断 = マネージドストレージアカウントで有効にする
@@ -91,7 +91,7 @@ param vm_diagnosticsProfile_bootDiagnostics_enabled bool = true // ブート診�
 param vm_additionalCapabilities_hibernationEnabled bool = true // 休止状態 = true
 
 ////////////////////////////////////////////////////////////
-// AVD Session Host VM definition.
+// the virtual machine definition.
 resource vm 'Microsoft.Compute/virtualMachines@2021-07-01' = {
 
   // ** Required
@@ -123,7 +123,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2021-07-01' = {
 	  networkProfile: {
 	    networkInterfaces: [
         {
-		      id: avdSessionHostVmNic.id
+		      id: VmNic.id
 		    }
       ]
 	  }

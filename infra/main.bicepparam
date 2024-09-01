@@ -1,24 +1,31 @@
 using './main.bicep'
 
-param systemName = readEnvironmentVariable('SYSTEM_NAME')
-param environmentName = readEnvironmentVariable('AZURE_ENV_NAME')
-param location = readEnvironmentVariable('AZURE_LOCATION')
+param systemName = readEnvironmentVariable('SYSTEM_NAME', 'RagSystem')
+param environmentName = readEnvironmentVariable('AZURE_ENV_NAME', 'dev')
+param location = readEnvironmentVariable('AZURE_LOCATION', 'eastus')
+var adminVmAdminPassword = readEnvironmentVariable('ADMIN_VM_ADMIN_PASSWORD', 'P@ssw0rd1234')
+var clientIpAddressRange = readEnvironmentVariable('CLIENT_IP_ADDRESS_RANGE', '0.0.0.0')
 //param resourceGroupName = '${systemName}-${environmentName}'
 
 ////////////////////////////////////////////////////////////
 // Parameters for the resource group.
 
 // The name of the resource group, called as 'RagRg'.
-param ragRg_name = readEnvironmentVariable('AZURE_RESOURCE_GROUP_NAME')
+param rg_name = readEnvironmentVariable('AZURE_RESOURCE_GROUP_NAME', '${systemName}-${environmentName}')
+
+////////////////////////////////////////////////////////////
+// Parameters for the NAT Gateway.
+param natGw_name = '${systemName}-NatGw-${environmentName}'
+param natGw_Ip_name = '${systemName}-NatGwIP-${environmentName}'
 
 ////////////////////////////////////////////////////////////
 // Parameters for the virtual network.
 
-// The RagSystem main virtual network, called as 'RagVNet'.
-param ragVNet_name = '${systemName}-MainVnet-${environmentName}'
-param ragVNet_addressPrefix = '10.0.0.0/16'
-param ragVNet_encryptionEnabled = true
-param ragVNet_ddosProtectionEnabled = false
+// The Rag main virtual network, called as 'RagVNet'.
+param mainVNet_name = '${systemName}-MainVnet-${environmentName}'
+param mainVNet_addressPrefix = '10.0.0.0/16'
+param mainVNet_encryptionEnabled = true
+param mainVNet_ddosProtectionEnabled = false
 
 // The management subnet, called as 'AdminSubnet'.
 param adminSubnet_name = 'AdminSubnet'
@@ -45,7 +52,7 @@ param adminVm_name = '${systemName}-AdminVm-${environmentName}'
 param adminVm_computerName = 'AdminHost'
 param adminVm_osProfile_adminUsername = 'satoadmin'
 @secure()
-param adminVm_osProfile_adminPassword = '@HoAhoMan123!"#'
+param adminVm_osProfile_adminPassword = adminVmAdminPassword
 param adminVm_osProfile_provisionVMAgent = true
 param adminVm_osProfile_enableAutomaticUpdates = true
 param adminVm_osProfile_patchMode = 'AutomaticByPlatform'
@@ -79,11 +86,168 @@ param adminVm_additionalCapabilities_hibernationEnabled = false
 // Parameters for the Azure Bastion.
 
 // The public IP address for the Azure Bastion.
-param ragBastion_ip_name = '${systemName}-BastionIP-${environmentName}'
-param ragBastion_ip_sku = 'Standard'
-param ragBastion_ip_allocationMethod = 'Static'
-param ragBastion_ip_ipVersion = 'IPv4'
+param bastion_ip_name = '${systemName}-BastionIP-${environmentName}'
 
 // The Azure Bastion.
-param ragBastion_name = '${systemName}-Bastion-${environmentName}'
-param ragBastion_sku = 'Basic'
+param bastion_name = '${systemName}-Bastion-${environmentName}'
+param bastion_sku = 'Basic'
+
+// The Network Security Group for the AzureBastionSubnet.
+param bastionNsg_name = '${systemName}-BastionNsg-${environmentName}'
+
+// Definitions of Outbound traffic rules.
+param bastionNsg_securityRules_outBound = [
+      {
+        name: 'AllowSshRdpToVNet'
+        properties: {
+          description: 'Allow SSH and RDP to the Virtual Network.'
+          protocol: 'TCP'
+          sourcePortRange: '*'
+          destinationPortRanges: [
+            '22'
+            '3389'
+          ]
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: 'VirtualNetwork'
+          access: 'Allow'
+          priority: 110
+          direction: 'Outbound'
+        }
+      }
+      {
+        name: 'AllowHttpsToAzureCloud'
+        properties: {
+          description: 'Allow HTTPS to Azure Cloud.'
+          protocol: 'TCP'
+          sourcePortRange: '*'
+          destinationPortRange: '443'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: 'AzureCloud'
+          access: 'Allow'
+          priority: 120
+          direction: 'Outbound'
+        }
+      }
+      {
+        name: 'AllowSessionInformationToInternet'
+        properties: {
+          description: 'Allow Session Information with HTTP to Internet.'
+          protocol: 'TCP'
+          sourcePortRange: '*'
+          destinationPortRange: '80'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: 'Internet'
+          access: 'Allow'
+          priority: 130
+          direction: 'Outbound'
+        }
+      }
+      {
+        name: 'AllowBastioinCommunicationAmoungVNet'
+        properties: {
+          description: 'Allow Bastion Communication among the Virtual Network.'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRanges: [
+            '8080'
+            '5701'
+          ]
+          sourceAddressPrefix: 'VirtualNetwork'
+          destinationAddressPrefix: 'VirtualNetwork'
+          access: 'Allow'
+          priority: 140
+          direction: 'Outbound'
+        }
+      }
+      {
+        name: 'DenyAllOutbound'
+        properties: {
+          description: 'Deny All Outbound Traffic.'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: '*'
+          access: 'Deny'
+          priority: 4096
+          direction: 'Outbound'
+        }
+      }
+    ]
+
+// Definitions of Inbound traffic rules.
+param bastionNsg_securityRules_inBound = [
+      {
+        name: 'AllowFromGatewayManager'
+        properties: {
+          description: 'Allow Gateway Manager.'
+          protocol: 'TCP'
+          sourcePortRange: '*'
+          destinationPortRange: '443'
+          sourceAddressPrefix: 'GatewayManager'
+          destinationAddressPrefix: '*'
+          access: 'Allow'
+          priority: 110
+          direction: 'Inbound'
+        }
+      }
+      {
+        name: 'AllowFromAzureLoadBalancer'
+        properties: {
+          description: 'Allow Azure Load Balancer.'
+          protocol: 'TCP'
+          sourcePortRange: '*'
+          destinationPortRange: '443'
+          sourceAddressPrefix: 'AzureLoadBalancer'
+          destinationAddressPrefix: '*'
+          access: 'Allow'
+          priority: 120
+          direction: 'Inbound'
+        }
+      }
+      {
+        name: 'AllowBastionHostCommunicationAmoungVNet'
+        properties: {
+          description: 'Allow Bastion Host Communication among the Virtual Network.'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRanges: [
+            '8080'
+            '5701'
+          ]
+          sourceAddressPrefix: 'VirtualNetwork'
+          destinationAddressPrefix: 'VirtualNetwork'
+          access: 'Allow'
+          priority: 130
+          direction: 'Inbound'
+        }
+      }
+      {
+        name: 'AllowClientIpToAccessToBastion'
+        properties: {
+          description: 'Allow Client IP to access to bastion.'
+          protocol: 'TCP'
+          sourcePortRange: '*'
+          destinationPortRange: '443'
+          sourceAddressPrefix: clientIpAddressRange
+          destinationAddressPrefix: '*'
+          access: 'Allow'
+          priority: 210
+          direction: 'Inbound'
+        }
+      } 
+      {
+        name: 'DenyAllInbound'
+        properties: {
+          description: 'Deny All Inbound Traffic.'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: '*'
+          access: 'Deny'
+          priority: 4096
+          direction: 'Inbound'
+        }
+      } 
+    ]

@@ -14,28 +14,13 @@ param tags object
 @description('The name of the Public IP Address of the Azure Bastion.')
 param bastion_ip_name string
 
-@description('The SKU of the Public IP Address of the Azure Bastion.')
-param bastion_ip_sku string
-
-@description('The allocation method of the Public IP Address of the Azure Bastion.')
-param bastion_ip_allocationMethod string
-
-@description('The IP version of the Public IP Address of the Azure Bastion.')
-param bastion_ip_ipVersion string
-
 // The Public IP Address of the Azure Bastion.
-resource bastionIp 'Microsoft.Network/publicIPAddresses@2021-02-01' = {
+module bastionIp './public-ip.bicep' = {
   name: bastion_ip_name
-  location: resourceGroup().location
-  tags: tags
 
-  sku: {
-    name: bastion_ip_sku
-  }
-
-  properties: {
-    publicIPAllocationMethod: bastion_ip_allocationMethod
-    publicIPAddressVersion: bastion_ip_ipVersion
+  params : {
+    name: bastion_ip_name
+    tags: tags
   }
 }
 
@@ -80,7 +65,7 @@ resource bastion 'Microsoft.Network/bastionHosts@2023-11-01' = {
             id: parentSbunet.id
           }
           publicIPAddress: {
-            id: bastionIp.id
+            id: bastionIp.outputs.publicIpId
           }
         }
       }
@@ -88,4 +73,4 @@ resource bastion 'Microsoft.Network/bastionHosts@2023-11-01' = {
   }
 }
 
-output bastion object = bastion
+output bastionId string = bastion.id

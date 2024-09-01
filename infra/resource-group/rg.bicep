@@ -23,4 +23,4 @@ resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   tags: tags
 }
 
-output rg object = rg
+output rgId string = rg.id

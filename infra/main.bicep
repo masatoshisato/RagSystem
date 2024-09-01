@@ -1,4 +1,4 @@
-// This is the main bicep file to build Azure Resources for the RagSystem.
+// This is the main bicep file to build Azure Resources for the Rag.
 
 targetScope = 'subscription'
 
@@ -25,83 +25,83 @@ var tags = {
 }
 
 ////////////////////////////////////////////////////////////
-// The resource group for the RagSystem (called as 'RagRg' below).
+// The resource group for the Rag (called as 'Rg' below).
 
 // Parameter definitions for the resource group.
 @description('The name of the resource group')
-param ragRg_name string
+param rg_name string
 
 // Build the resource group.
 @description('Create a Azure Resource Group by bicep template with some tags.')
-module RagRg './resource-group/rg.bicep' = {
+module Rg './resource-group/rg.bicep' = {
 
   scope: subscription()
-  name: ragRg_name
+  name: rg_name
 
   params: {
-    rg_name: ragRg_name
+    rg_name: rg_name
     location: location
     tags: tags
   }
 }
 
 ////////////////////////////////////////////////////////////
-// The NAT Gateway for the RagSystem (called as 'RagNatGw' below).
+// The NAT Gateway for the Rag (called as 'NatGw' below).
 
 // Parameters for the NAT Gateway.
 @description('The name of the NAT Gateway.')
-param ragNatGw_name string = 'RagSystem-NatGw-dev'
+param natGw_name string
 
 @description('The name of the public IP address for the NAT Gateway.')
-param ragNatGw_Ip_name string = 'RagSystem-NatGwIP-dev'
+param natGw_Ip_name string
 
 // Build the NAT Gateway.
-module RagNatGw './network/natgw.bicep' = {
-  scope: resourceGroup(ragRg_name)
-  name: ragNatGw_name
+module NatGw './network/nat-gw.bicep' = {
+  scope: resourceGroup(rg_name)
+  name: natGw_name
   params: {
-    natGw_name: ragNatGw_name
-    natGw_Ip_name: ragNatGw_Ip_name
+    natGw_name: natGw_name
+    natGw_Ip_name: natGw_Ip_name
     tags: tags
   }
   dependsOn: [
-    RagRg
+    Rg
   ]
 }
 
 ////////////////////////////////////////////////////////////
-// The main virtual network for the RagSystem (called as 'RagVNet' below).
+// The main virtual network for the Rag (called as 'MainVNet' below).
 
-// Parameters for the RagVNet.
+// Parameters for the MainVNet.
 @description('The name of the virtual network that is a main vnet for this system.')
-param ragVNet_name string
+param mainVNet_name string
 
-@description('The address prefix for the RagVNet.')
-param ragVNet_addressPrefix string
+@description('The address prefix for the MainVNet.')
+param mainVNet_addressPrefix string
 
-@description('The flag for the traffic encryption between VMs in the RagVNet.')
-param ragVNet_encryptionEnabled bool
+@description('The flag for the traffic encryption between VMs in the MainVNet.')
+param mainVNet_encryptionEnabled bool
 
-@description('The flag for the DDoS protection for network of the RagVNet.')
-param ragVNet_ddosProtectionEnabled bool
+@description('The flag for the DDoS protection for network of the MainVNet.')
+param mainVNet_ddosProtectionEnabled bool
 
-// Build the RagVNet.
-module RagVNet './network/vnet.bicep' = {
+// Build the MainVNet.
+module MainVNet './network/vnet.bicep' = {
 
-  scope: resourceGroup(ragRg_name)
-  name: ragVNet_name
+  scope: resourceGroup(rg_name)
+  name: mainVNet_name
 
   params: {
     location: location
     tags: tags
     
-    vNet_name: ragVNet_name
-    vNet_addressPrefix: ragVNet_addressPrefix
-    vNet_encryptionEnabled: ragVNet_encryptionEnabled
-    vNet_ddosProtectionEnabled: ragVNet_ddosProtectionEnabled
+    vNet_name: mainVNet_name
+    vNet_addressPrefix: mainVNet_addressPrefix
+    vNet_encryptionEnabled: mainVNet_encryptionEnabled
+    vNet_ddosProtectionEnabled: mainVNet_ddosProtectionEnabled
   }
   dependsOn: [
-    RagRg
+    Rg
   ]
 }
 
@@ -124,7 +124,7 @@ param adminSubnet_privateEndpointNetworkPolicies string
 // Build the AdminSubnet.
 module AdminSubnet './network/subnet.bicep' = {
 
-  scope: resourceGroup(ragRg_name)
+  scope: resourceGroup(rg_name)
   name: adminSubnet_name
 
   params: {
@@ -132,11 +132,12 @@ module AdminSubnet './network/subnet.bicep' = {
     subnet_addressPrefix: adminSubnet_addressPrefix
     subnet_defaultOutboundAccess: adminSubnet_defaultOutboundAccess
     subnet_privateEndpointNetworkPolicies: adminSubnet_privateEndpointNetworkPolicies
-    vnet_name: ragVNet_name
-    natGw_name: ragNatGw_name
+    vnet_name: mainVNet_name
+    natGw_name: natGw_name
   }
   dependsOn: [
-    RagVNet
+    MainVNet
+    NatGw
   ]
 }
 
@@ -159,7 +160,7 @@ param bastionSubnet_privateEndpointNetworkPolicies string
 // Build the BastionSubnet.
 module BastionSubnet './network/subnet.bicep' = {
 
-  scope: resourceGroup(ragRg_name)
+  scope: resourceGroup(rg_name)
   name: bastionSubnet_name
 
   params: {
@@ -167,16 +168,19 @@ module BastionSubnet './network/subnet.bicep' = {
     subnet_addressPrefix: bastionSubnet_addressPrefix
     subnet_defaultOutboundAccess: bastionSubnet_defaultOutboundAccess
     subnet_privateEndpointNetworkPolicies: bastionSubnet_privateEndpointNetworkPolicies
-    vnet_name: ragVNet_name
-    natGw_name: ragNatGw_name
+    vnet_name: mainVNet_name
+    // natGw_name: natGw_name
+    nsg_name: bastionNsg_name
   }
   dependsOn: [
-    RagVNet
+    MainVNet
+    // NatGw
+    BastionNsg
   ]
 }
 
 ////////////////////////////////////////////////////////////
-// The Virtual Machine for the management of the RagSystem (called as 'AdminVm' below).
+// The Virtual Machine for the management of the Rag (called as 'AdminVm' below).
 
 // Parameters for the AdminVm network interface card.
 @description('The name of the NIC for the AdminVm.')
@@ -258,7 +262,7 @@ param adminVm_additionalCapabilities_hibernationEnabled bool
 
 // Build the AdminVm.
 module AdminVm './compute/vm.bicep' = {
-  scope: resourceGroup(ragRg_name)
+  scope: resourceGroup(rg_name)
   name: adminVm_name
   params: {
     // Common parameters
@@ -272,7 +276,7 @@ module AdminVm './compute/vm.bicep' = {
 
     // Parameters for the AVD session host VM.
     vm_name: adminVm_name
-    vm_associatedVNetName: ragVNet_name
+    vm_associatedVNetName: mainVNet_name
     vm_associatedSubnetName: adminSubnet_name
     vm_computerName: adminVm_computerName
 
@@ -315,52 +319,68 @@ module AdminVm './compute/vm.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The Azure Bastion for the RagSystem (called as 'RagSystem-Bastion' below).
+// The Azure Bastion for the Rag (called as 'Bastion' below).
 
 // Parameters for the public IP address of the Bastion.
 @description('The name of the public IP address for the Bastion.')
-param ragBastion_ip_name string = 'RagSystem-Bastion-IP-dev'
+param bastion_ip_name string
 
-@description('The SKU for the public IP address of the Bastion.')
-param ragBastion_ip_sku string = 'Standard'
+// Parameters for the Bastion.
+@description('The name of the Bastion.')
+param bastion_name string
 
-@description('The allocation method for the public IP address of the Bastion.')
-param ragBastion_ip_allocationMethod string = 'Static'
-
-@description('The IP version for the public IP address of the Bastion.')
-param ragBastion_ip_ipVersion string = 'IPv4'
-
-// Parameters for the Azure Bastion.
-@description('The name of the Azure Bastion.')
-param ragBastion_name string = 'RagSystem-Bastion-dev'
-
-@description('The SKU for the Azure Bastion.')
-param ragBastion_sku string = 'Standard'
+@description('The SKU for the Bastion.')
+param bastion_sku string
 
 // Build the Bastion.
-module RagSystemBastion './network/bastion.bicep' = {
-  scope: resourceGroup(ragRg_name)
-  name: 'RagSystem-Bastion-dev'
+module Bastion './network/bastion.bicep' = {
+  scope: resourceGroup(rg_name)
+  name: bastion_name
   params: {
 
     // common parameters
     tags: tags
 
     // Associated VNet name and Subnet name for the Bastion.
-    associatedVnet_name: ragVNet_name
+    associatedVnet_name: mainVNet_name
     associatedSubnet_name: bastionSubnet_name
 
     // parameters for the public IP address of the Bastion.
-    bastion_ip_name: ragBastion_ip_name
-    bastion_ip_sku: ragBastion_ip_sku
-    bastion_ip_allocationMethod: ragBastion_ip_allocationMethod
-    bastion_ip_ipVersion: ragBastion_ip_ipVersion
+    bastion_ip_name: bastion_ip_name
 
     // parameters for the Bastion.
-    bastion_name: ragBastion_name
-    bastion_sku: ragBastion_sku
+    bastion_name: bastion_name
+    bastion_sku: bastion_sku
   }
   dependsOn: [
     BastionSubnet
+  ]
+}
+
+//////////////////////////////////////////////////////////// 
+// The Network Security Group for the Azure Bastion Subnet (called as 'BastionNsg' below).
+@description('The name of the Network Security Group for the Azure Bastion Subnet.')
+param bastionNsg_name string
+
+@description('The outbound security rules of the Network Security Group for the Azure Bastion Subnet.')
+param bastionNsg_securityRules_outBound array 
+
+@description('The inboud security rules of the Network Security Group for the Azure Bastion Subnet.')
+param bastionNsg_securityRules_inBound array
+
+@description('The security rules of the Network Security Group for the Azure Bastion Subnet.')
+var bastionNsg_securityRules = concat(bastionNsg_securityRules_outBound, bastionNsg_securityRules_inBound)
+
+// Build the Network Security Group for the AzureBastionSubnet.
+module BastionNsg './network/nsg.bicep' = {
+  scope: resourceGroup(rg_name)
+  name: bastionNsg_name
+  params: {
+    tags: tags
+    name: bastionNsg_name
+    securityRules: bastionNsg_securityRules
+  }
+  dependsOn: [
+    Rg
   ]
 }
