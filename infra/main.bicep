@@ -5,6 +5,9 @@ targetScope = 'subscription'
 ////////////////////////////////////////////////////////////
 // The common parameters and variables for all the resources.
 
+@description('The tenant ID for Azure Active Directory authentication.')
+param tenantId string
+
 @description('System name that can be used as part of naming resource convention')
 param systemName string
 
@@ -178,6 +181,40 @@ module BastionSubnet './network/subnet.bicep' = {
     BastionNsg
   ]
 }
+
+////////////////////////////////////////////////////////////
+// The subnet of the RagVNet for dedicated to the VPN Gateway (called as 'GatewaySubnet' below).
+
+@description('The name of the GatewaySubnet that is used for the VPN Gateway.')
+param gatewaySubnet_name string
+
+@description('The address prefix for the GatewaySubnet.')
+param gatewaySubnet_addressPrefix string
+
+@description('The flag for the private subnet mode for the GatewaySubnet. This mode is used for explicitly blocking the internet access from the subnet.')
+param gatewaySubnet_defaultOutboundAccess bool = false
+
+@description('The flag for the private endpoint network policies for the GatewaySubnet. This is used for the private endpoint connection to the subnet.')
+param gatewaySubnet_privateEndpointNetworkPolicies string
+
+// Build the GatewaySubnet.
+module GatewaySubnet './network/subnet.bicep' = {
+
+  scope: resourceGroup(rg_name)
+  name: gatewaySubnet_name
+
+  params: {
+    subnet_name: gatewaySubnet_name
+    subnet_addressPrefix: gatewaySubnet_addressPrefix
+    subnet_defaultOutboundAccess: gatewaySubnet_defaultOutboundAccess
+    subnet_privateEndpointNetworkPolicies: gatewaySubnet_privateEndpointNetworkPolicies
+    vnet_name: mainVNet_name
+  }
+  dependsOn: [
+    MainVNet
+  ]
+}
+
 
 ////////////////////////////////////////////////////////////
 // The Virtual Machine for the management of the Rag (called as 'AdminVm' below).
@@ -383,4 +420,68 @@ module BastionNsg './network/nsg.bicep' = {
   dependsOn: [
     Rg
   ]
+}
+
+////////////////////////////////////////////////////////////
+// The VPN Gateway for the Rag (called as 'P2SVpn' below).
+
+@description('The name of the VPN Gateway.')
+param vpnGateway_name string
+
+@description('The gateway type for the VPN Gateway.')
+param vpnGateway_gatewayType string
+
+@description('The SKU for the VPN Gateway.')
+param vpnGateway_sku string
+
+@description('The generation for the VPN Gateway.')
+param vpnGateway_generation string
+
+@description('The name of the public IP address 1 for the VPN Gateway.')
+param vpnGateway_ip1_name string
+
+@description('The name of the public IP address 2 for the VPN Gateway.')
+param vpnGateway_ip2_name string
+
+@description('The flag to configure the BGP for the VPN Gateway.')
+param vpnGateway_configureBgp bool
+
+@description('The address pool for the VPN clients.')
+param vpnGateway_addressPool string
+
+@description('The tunnel type for the VPN. For example, "OpenVPN".')
+param vpnGateway_tunnelType string
+
+@description('The authentication type for the VPN. For example, "AAD".')
+param vpnGateway_authenticationType string
+
+@description('The name of the public IP address for the user VPN entry point.')
+param vpnGateway_userVpnPublicIpName string
+
+// Build the VPN Gateway.
+module P2SVpn './network/vpn-gw.bicep' = {
+  scope: resourceGroup(rg_name)
+  name: vpnGateway_name
+  params: {
+    tags: tags
+    location: location
+    vpnGatewayName: vpnGateway_name
+    gatewayType: vpnGateway_gatewayType
+    sku: vpnGateway_sku
+    generation: vpnGateway_generation
+    virtualNetworkName: mainVNet_name
+    subnetName: gatewaySubnet_name
+    vpnIp1Name: vpnGateway_ip1_name
+    vpnIp2Name: vpnGateway_ip2_name
+    configureBgp: vpnGateway_configureBgp
+    addressPool: vpnGateway_addressPool
+    tunnelType: vpnGateway_tunnelType
+    authenticationType: vpnGateway_authenticationType
+    vpnEntryPointIpName: vpnGateway_userVpnPublicIpName
+    tenantId: tenantId
+  }
+  dependsOn: [
+    MainVNet
+    GatewaySubnet
+  ] 
 }

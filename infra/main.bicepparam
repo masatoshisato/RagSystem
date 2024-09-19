@@ -1,11 +1,12 @@
 using './main.bicep'
 
-param systemName = readEnvironmentVariable('SYSTEM_NAME', 'RagSystem')
-param environmentName = readEnvironmentVariable('AZURE_ENV_NAME', 'dev')
-param location = readEnvironmentVariable('AZURE_LOCATION', 'eastus')
-var adminVmAdminPassword = readEnvironmentVariable('ADMIN_VM_ADMIN_PASSWORD', 'P@ssw0rd1234')
+param tenantId = readEnvironmentVariable('AZURE_TENANT_ID', 'put-your-default-tenant-id-here')
+param systemName = readEnvironmentVariable('SYSTEM_NAME', 'put-your-default-system-name-here')
+param environmentName = readEnvironmentVariable('AZURE_ENV_NAME', 'put-your-default-environment-name-here')
+param location = readEnvironmentVariable('AZURE_LOCATION', 'put-your-default-location-here')
+
+// for the security rule of the Azure Bastion
 var clientIpAddressRange = readEnvironmentVariable('CLIENT_IP_ADDRESS_RANGE', '0.0.0.0')
-//param resourceGroupName = '${systemName}-${environmentName}'
 
 ////////////////////////////////////////////////////////////
 // Parameters for the resource group.
@@ -39,6 +40,11 @@ param bastionSubnet_addressPrefix = '10.0.0.64/26'
 param bastionSubnet_defaultOutboundAccess = false
 param bastionSubnet_privateEndpointNetworkPolicies = 'Disabled'
 
+param gatewaySubnet_name = 'GatewaySubnet'
+param gatewaySubnet_addressPrefix = '10.0.0.32/27'
+param gatewaySubnet_defaultOutboundAccess = false
+param gatewaySubnet_privateEndpointNetworkPolicies = 'Disabled'
+
 ////////////////////////////////////////////////////////////
 // Parameters for the Virtural Machines.
 
@@ -52,7 +58,7 @@ param adminVm_name = '${systemName}-AdminVm-${environmentName}'
 param adminVm_computerName = 'AdminHost'
 param adminVm_osProfile_adminUsername = 'satoadmin'
 @secure()
-param adminVm_osProfile_adminPassword = adminVmAdminPassword
+param adminVm_osProfile_adminPassword = readEnvironmentVariable('ADMIN_VM_ADMIN_PASSWORD', 'put-your-default-admin-vm-admin-password-here')
 param adminVm_osProfile_provisionVMAgent = true
 param adminVm_osProfile_enableAutomaticUpdates = true
 param adminVm_osProfile_patchMode = 'AutomaticByPlatform'
@@ -251,3 +257,18 @@ param bastionNsg_securityRules_inBound = [
         }
       } 
     ]
+
+////////////////////////////////////////////////////////////
+// Parameters for the P2S VPN Gateway.
+
+param vpnGateway_name = '${systemName}-P2SVpnGw-${environmentName}'
+param vpnGateway_gatewayType = 'Vpn'
+param vpnGateway_sku  = 'VpnGw1'
+param vpnGateway_generation  = 'Generation1'
+param vpnGateway_ip1_name = '${systemName}-P2SVpnGwIp1-${environmentName}'
+param vpnGateway_ip2_name = '${systemName}-P2SVpnGwIp2-${environmentName}'
+param vpnGateway_configureBgp = false
+param vpnGateway_addressPool = '192.168.10.0/24'
+param vpnGateway_tunnelType = 'OpenVPN'
+param vpnGateway_authenticationType = 'AAD'
+param vpnGateway_userVpnPublicIpName = '${systemName}-P2SVpnGwIpEntryPoint-${environmentName}'
