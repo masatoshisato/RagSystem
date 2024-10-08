@@ -1,3 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
 name: RagSystem
+
+hooks:
+  postprovision:
+    - run: ./infra/scripts/createSecurityGroup.sh
+      description: "Create security group for system operations and assign roles to it."
+      shell: sh
+    - run: ./infra/scripts/assignAzureRoles.sh
+      description: "Assign roles to the system operations security group."
+      shell: sh
