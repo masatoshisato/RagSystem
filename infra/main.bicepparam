@@ -1,6 +1,5 @@
 using './main.bicep'
 
-param tenantId = readEnvironmentVariable('AZURE_TENANT_ID', 'put-your-default-tenant-id-here')
 param systemName = readEnvironmentVariable('SYSTEM_NAME', 'put-your-default-system-name-here')
 param environmentName = readEnvironmentVariable('AZURE_ENV_NAME', 'put-your-default-environment-name-here')
 param location = readEnvironmentVariable('AZURE_LOCATION', 'put-your-default-location-here')
@@ -9,10 +8,8 @@ param location = readEnvironmentVariable('AZURE_LOCATION', 'put-your-default-loc
 var clientIpAddressRange = readEnvironmentVariable('CLIENT_IP_ADDRESS_RANGE', '0.0.0.0')
 
 ////////////////////////////////////////////////////////////
-// Parameters for the resource group.
-
-// The name of the resource group, called as 'RagRg'.
-param rg_name = readEnvironmentVariable('AZURE_RESOURCE_GROUP_NAME', '${systemName}-${environmentName}')
+// Parameters for Resource Group.
+param rg_name = readEnvironmentVariable('RESOURCE_GROUP_NAME', 'put-your-default-resource-group-name-here')
 
 ////////////////////////////////////////////////////////////
 // Parameters for the NAT Gateway.

@@ -46,9 +46,6 @@ param authenticationType string
 @description('The name of the public IP address for the VPN entry point to access from user.')
 param vpnEntryPointIpName string
 
-@description('The tenant ID for Azure Active Directory authentication.')
-param tenantId string
-
 @description('The tags to be applied to the resources.')
 param tags object
 
@@ -149,9 +146,9 @@ resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2021-05-01' = {
       vpnAuthenticationTypes: [
         authenticationType
       ]
-      aadTenant: '${environment().authentication.loginEndpoint}${tenantId}/'
+      aadTenant: '${environment().authentication.loginEndpoint}${tenant().tenantId}/'
       aadAudience: 'c632b3df-fb67-4d84-bdcf-b95ad541b5c8'
-      aadIssuer: 'https://sts.windows.net/${tenantId}/'
+      aadIssuer: 'https://sts.windows.net/${tenant().tenantId}/'
     }
     customRoutes: {
       addressPrefixes: []

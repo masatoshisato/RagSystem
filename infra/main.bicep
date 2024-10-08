@@ -5,9 +5,6 @@ targetScope = 'subscription'
 ////////////////////////////////////////////////////////////
 // The common parameters and variables for all the resources.
 
-@description('The tenant ID for Azure Active Directory authentication.')
-param tenantId string
-
 @description('System name that can be used as part of naming resource convention')
 param systemName string
 
@@ -28,9 +25,9 @@ var tags = {
 }
 
 ////////////////////////////////////////////////////////////
-// The resource group for the Rag (called as 'Rg' below).
+// The resource group for the Rag (named as 'Rg' below).
 
-// Parameter definitions for the resource group.
+// Parameters for the resource group.
 @description('The name of the resource group')
 param rg_name string
 
@@ -49,7 +46,7 @@ module Rg './resource-group/rg.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The NAT Gateway for the Rag (called as 'NatGw' below).
+// The NAT Gateway for the Rag (named as 'NatGw' below).
 
 // Parameters for the NAT Gateway.
 @description('The name of the NAT Gateway.')
@@ -73,7 +70,7 @@ module NatGw './network/nat-gw.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The main virtual network for the Rag (called as 'MainVNet' below).
+// The main virtual network for the Rag (named as 'MainVNet' below).
 
 // Parameters for the MainVNet.
 @description('The name of the virtual network that is a main vnet for this system.')
@@ -109,7 +106,7 @@ module MainVNet './network/vnet.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The subnet of the RagVNet to manage the azure resources from inside of the RagVNet (called as 'AdminSubnet' below).
+// The subnet of the RagVNet to manage the azure resources from inside of the RagVNet (named as 'AdminSubnet' below).
 
 // Parameters for the AdminSubnet.
 @description('The name of the AdminSubnet that is used for the management of this system from inside of the RagVNet.')
@@ -145,7 +142,7 @@ module AdminSubnet './network/subnet.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The subnet of the RagVNet for dedicated to the Bastion (called as 'BastionSubnet' below).
+// The subnet of the RagVNet for dedicated to the Bastion (named as 'BastionSubnet' below).
 
 // Parameters for the BastionSubnet.
 @description('The name of the BastionSubnet that is used for the Azure Bastion service.')
@@ -183,7 +180,7 @@ module BastionSubnet './network/subnet.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The subnet of the RagVNet for dedicated to the VPN Gateway (called as 'GatewaySubnet' below).
+// The subnet of the RagVNet for dedicated to the VPN Gateway (named as 'GatewaySubnet' below).
 
 @description('The name of the GatewaySubnet that is used for the VPN Gateway.')
 param gatewaySubnet_name string
@@ -217,7 +214,7 @@ module GatewaySubnet './network/subnet.bicep' = {
 
 
 ////////////////////////////////////////////////////////////
-// The Virtual Machine for the management of the Rag (called as 'AdminVm' below).
+// The Virtual Machine for the management of the Rag (named as 'AdminVm' below).
 
 // Parameters for the AdminVm network interface card.
 @description('The name of the NIC for the AdminVm.')
@@ -356,7 +353,7 @@ module AdminVm './compute/vm.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The Azure Bastion for the Rag (called as 'Bastion' below).
+// The Azure Bastion for the Rag (named as 'Bastion' below).
 
 // Parameters for the public IP address of the Bastion.
 @description('The name of the public IP address for the Bastion.')
@@ -395,7 +392,7 @@ module Bastion './network/bastion.bicep' = {
 }
 
 //////////////////////////////////////////////////////////// 
-// The Network Security Group for the Azure Bastion Subnet (called as 'BastionNsg' below).
+// The Network Security Group for the Azure Bastion Subnet (named as 'BastionNsg' below).
 @description('The name of the Network Security Group for the Azure Bastion Subnet.')
 param bastionNsg_name string
 
@@ -423,7 +420,7 @@ module BastionNsg './network/nsg.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// The VPN Gateway for the Rag (called as 'P2SVpn' below).
+// The VPN Gateway for the Rag (named as 'P2SVpn' below).
 
 @description('The name of the VPN Gateway.')
 param vpnGateway_name string
@@ -478,10 +475,77 @@ module P2SVpn './network/vpn-gw.bicep' = {
     tunnelType: vpnGateway_tunnelType
     authenticationType: vpnGateway_authenticationType
     vpnEntryPointIpName: vpnGateway_userVpnPublicIpName
-    tenantId: tenantId
   }
   dependsOn: [
     MainVNet
     GatewaySubnet
   ] 
 }
+
+////////////////////////////////////////////////////////////
+// KeyVault for the Rag (named as 'kvAdminVm' below).
+
+// Parameters for kvAdminVm.
+@description('The SKU of the KeyVault.')
+param kvAdminVm_sku string = 'standard'
+
+@description('The flag to enable the soft delete feature.')
+param kvAdminVm_enableSoftDelete bool = true
+
+@description('The retention days of the soft delete feature.')
+param kvAdminVm_softDeleteRetentionInDays int = 90
+
+@description('The flag to enable the purge protection feature.')
+param kvAdminVm_enablePurgeProtection bool = true
+
+@description('The flag to enable the RBAC authorization.')
+param kvAdminVm_enableRbacAuthorization bool = true
+
+@description('The Addtional IP rules which is to enable access from if you want to specifiy the Azure Services bypass.')
+param kvAdminVm_ipRules array = [
+  {
+    value: '114.150.248.139/32' // Your IP address
+  }
+  {
+    value: '103.5.140.0/22' // from W2wifi
+  }
+  {
+    value: '106.154.180.0/24' // from W2wifi
+  }
+]
+
+// Build kvAdminVm.
+module KvAdminVm './keyvault/keyvault.bicep' = {
+  scope: resourceGroup(rg_name)
+  name: 'kvAdminVm'
+  params: {
+    tags: tags
+    environmentName: environmentName
+    systemName: systemName
+    kv_sku: kvAdminVm_sku
+    kv_enableSoftDelete: kvAdminVm_enableSoftDelete
+    kv_softDeleteRetentionInDays: kvAdminVm_softDeleteRetentionInDays
+    kv_enablePurgeProtection: kvAdminVm_enablePurgeProtection
+    kv_enableRbacAuthorization: kvAdminVm_enableRbacAuthorization
+    kv_ipRules: kvAdminVm_ipRules
+  }
+  dependsOn: [
+    Rg
+  ]
+}
+
+// Secret for the AdminVm.
+module KvAdminVmSecret './keyvault/secret.bicep' = {
+  scope: resourceGroup(rg_name)
+  name: 'kvAdminVmSecret'
+  params: {
+    kv_name: KvAdminVm.outputs.kvName
+  }
+  dependsOn: [
+    KvAdminVm
+  ]
+}
+
+output rg_id string = Rg.outputs.rgId
+output kvAdminVm_id string = KvAdminVm.outputs.kvId
+output kvAdminVm_name string = KvAdminVm.outputs.kvName
