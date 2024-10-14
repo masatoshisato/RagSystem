@@ -74,3 +74,4 @@ resource bastion 'Microsoft.Network/bastionHosts@2023-11-01' = {
 }
 
 output bastionId string = bastion.id
+output bastionName string = bastion.name

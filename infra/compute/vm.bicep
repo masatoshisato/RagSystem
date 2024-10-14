@@ -175,4 +175,7 @@ resource shutdownschedule 'Microsoft.DevTestLab/schedules@2018-09-15' = {
   }
 }
 
-output vm object = vm
+output vmId string = vm.id
+output vmName string = vm.name
+output vmNicId string = VmNic.id
+output vmNicName string = VmNic.name

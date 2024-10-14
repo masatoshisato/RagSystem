@@ -59,3 +59,4 @@ resource vNet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
 }
 
 output vNetId string = vNet.id
+output vNetName string = vNet.name

@@ -483,26 +483,26 @@ module P2SVpn './network/vpn-gw.bicep' = {
 }
 
 ////////////////////////////////////////////////////////////
-// KeyVault for the Rag (named as 'kvAdminVm' below).
+// KeyVault for the Rag (named as 'kv' below).
 
-// Parameters for kvAdminVm.
+// Parameters for kv.
 @description('The SKU of the KeyVault.')
-param kvAdminVm_sku string = 'standard'
+param kv_sku string = 'standard'
 
 @description('The flag to enable the soft delete feature.')
-param kvAdminVm_enableSoftDelete bool = true
+param kv_enableSoftDelete bool = true
 
 @description('The retention days of the soft delete feature.')
-param kvAdminVm_softDeleteRetentionInDays int = 90
+param kv_softDeleteRetentionInDays int = 90
 
 @description('The flag to enable the purge protection feature.')
-param kvAdminVm_enablePurgeProtection bool = true
+param kv_enablePurgeProtection bool = true
 
 @description('The flag to enable the RBAC authorization.')
-param kvAdminVm_enableRbacAuthorization bool = true
+param kv_enableRbacAuthorization bool = true
 
 @description('The Addtional IP rules which is to enable access from if you want to specifiy the Azure Services bypass.')
-param kvAdminVm_ipRules array = [
+param kv_ipRules array = [
   {
     value: '114.150.248.139/32' // Your IP address
   }
@@ -515,19 +515,19 @@ param kvAdminVm_ipRules array = [
 ]
 
 // Build kvAdminVm.
-module KvAdminVm './keyvault/keyvault.bicep' = {
+module Kv './keyvault/keyvault.bicep' = {
   scope: resourceGroup(rg_name)
-  name: 'kvAdminVm'
+  name: 'kv'
   params: {
     tags: tags
     environmentName: environmentName
     systemName: systemName
-    kv_sku: kvAdminVm_sku
-    kv_enableSoftDelete: kvAdminVm_enableSoftDelete
-    kv_softDeleteRetentionInDays: kvAdminVm_softDeleteRetentionInDays
-    kv_enablePurgeProtection: kvAdminVm_enablePurgeProtection
-    kv_enableRbacAuthorization: kvAdminVm_enableRbacAuthorization
-    kv_ipRules: kvAdminVm_ipRules
+    kv_sku: kv_sku
+    kv_enableSoftDelete: kv_enableSoftDelete
+    kv_softDeleteRetentionInDays: kv_softDeleteRetentionInDays
+    kv_enablePurgeProtection: kv_enablePurgeProtection
+    kv_enableRbacAuthorization: kv_enableRbacAuthorization
+    kv_ipRules: kv_ipRules
   }
   dependsOn: [
     Rg
@@ -539,13 +539,21 @@ module KvAdminVmSecret './keyvault/secret.bicep' = {
   scope: resourceGroup(rg_name)
   name: 'kvAdminVmSecret'
   params: {
-    kv_name: KvAdminVm.outputs.kvName
+    kv_name: Kv.outputs.kvName
   }
   dependsOn: [
-    KvAdminVm
+    Kv
   ]
 }
 
 output rg_id string = Rg.outputs.rgId
-output kvAdminVm_id string = KvAdminVm.outputs.kvId
-output kvAdminVm_name string = KvAdminVm.outputs.kvName
+output adminVm_name string = AdminVm.outputs.vmName
+output adminVm_id string = AdminVm.outputs.vmId
+output adminVm_nic_name string = AdminVm.outputs.vmNicName
+output adminVm_nic_id string = AdminVm.outputs.vmNicId
+output bastion_name string = Bastion.outputs.bastionName
+output bastion_id string = Bastion.outputs.bastionId
+output vNet_name string = MainVNet.outputs.vNetName
+output vNet_id string = MainVNet.outputs.vNetId
+output kv_name string = Kv.outputs.kvName
+output kv_id string = Kv.outputs.kvId
